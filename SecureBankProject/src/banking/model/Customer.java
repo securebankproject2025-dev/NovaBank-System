@@ -23,7 +23,19 @@ public class Customer {
     // Default constructor — needed when building object from database results
     public Customer() { }
 
-    // Full constructor — used when registering a new customer
+   
+// Constructor used when reading customer data from the database
+public Customer(int customerId, String firstName, String lastName,
+                String idNumber, String email, String phone, String address) {
+    this.customerId = customerId;
+    this.firstName  = firstName;
+    this.lastName   = lastName;
+    this.idNumber   = idNumber;
+    this.email      = email;
+    this.phone      = phone;
+    this.address    = address;
+}    
+// Full constructor — used when registering a new customer
     public Customer(String firstName, String lastName, String idNumber,
                     String email, String phone, String address) {
         this.firstName = firstName;

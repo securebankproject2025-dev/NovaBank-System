@@ -91,7 +91,63 @@ public class TransactionDAO {
         return false;
     }
 
+// ============================================================
+// WITHDRAWAL
+// ============================================================
+public boolean withdraw(int accountId, BigDecimal amount, String description) {
 
+    Connection conn = getConn();
+
+    try {
+        // Turning off auto-commit so the balance update and ledger
+        // insert happen together — if one fails we roll back both
+        conn.setAutoCommit(false);
+
+        Optional<Account> accountOpt = accountDAO.findById(accountId);
+
+        if (accountOpt.isEmpty() || !accountOpt.get().isActive()) {
+            System.err.println("ERROR: Account not found or is closed.");
+            conn.rollback();
+            return false;
+        }
+
+        Account account = accountOpt.get();
+
+        // Check the account has enough money before withdrawing
+        // compareTo returns negative if balance is less than amount
+        if (account.getBalance().compareTo(amount) < 0) {
+            System.err.println("ERROR: Insufficient funds.");
+            System.err.println("  Available: R" + account.getBalance());
+            System.err.println("  Requested: R" + amount);
+            conn.rollback();
+            return false;
+        }
+
+        // Subtract the amount — using BigDecimal for exact arithmetic
+        BigDecimal newBalance = account.getBalance().subtract(amount);
+
+        boolean balanceUpdated = accountDAO.updateBalance(accountId, newBalance, conn);
+
+        if (!balanceUpdated) {
+            conn.rollback();
+            return false;
+        }
+
+        insertTransaction(conn, accountId, TYPE_WITHDRAWAL, amount, null, description);
+
+        conn.commit();
+        return true;
+
+    } catch (SQLException e) {
+        rollbackQuietly(conn);
+        System.err.println("ERROR - withdrawal failed: " + e.getMessage());
+
+    } finally {
+        resetAutoCommit(conn);
+    }
+
+    return false;
+}
     // ============================================================
     // TRANSFER
     // ============================================================
